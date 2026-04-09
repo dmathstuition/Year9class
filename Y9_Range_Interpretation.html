@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Year 9 · Measures of Spread: Range & Interpretation</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d1b3e;
+    --navy-mid: #152347;
+    --navy-light: #1e3468;
+    --gold: #f5c518;
+    --gold-light: #ffd85e;
+    --gold-pale: #fff4c2;
+    --coral: #ff6b6b;
+    --mint: #4ecdc4;
+    --white: #f9f7f2;
+    --text-muted: rgba(249,247,242,0.55);
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(245,197,24,0.2);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    cursor: default;
+  }
+
+  /* ── BACKGROUND CANVAS ── */
+  #bg-canvas { position: fixed; inset: 0; z-index: 0; opacity: 0.35; pointer-events: none; }
+
+  /* ── SLIDE SYSTEM ── */
+  .deck { position: relative; z-index: 1; width: 100vw; height: 100vh; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 60px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    transform: translateX(60px);
+  }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+  .slide.exit { opacity: 0; transform: translateX(-60px); }
+
+  /* ── PROGRESS BAR ── */
+  #progress-track {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 3px;
+    background: rgba(245,197,24,0.15); z-index: 100;
+  }
+  #progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    transition: width 0.5s ease;
+    box-shadow: 0 0 12px var(--gold);
+  }
+
+  /* ── NAV DOTS ── */
+  #dots {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; z-index: 100;
+  }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(245,197,24,0.3); cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+  }
+  .dot.on { background: var(--gold); transform: scale(1.4); }
+
+  /* ── ARROW BTNS ── */
+  #nav-prev, #nav-next {
+    position: fixed; top: 50%; z-index: 100;
+    background: rgba(245,197,24,0.1); border: 1px solid rgba(245,197,24,0.25);
+    color: var(--gold); font-size: 20px; width: 44px; height: 44px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transform: translateY(-50%);
+    transition: background 0.2s, box-shadow 0.2s;
+    backdrop-filter: blur(8px);
+  }
+  #nav-prev:hover, #nav-next:hover {
+    background: rgba(245,197,24,0.22); box-shadow: 0 0 20px rgba(245,197,24,0.3);
+  }
+  #nav-prev { left: 16px; }
+  #nav-next { right: 16px; }
+
+  /* ── SLIDE COUNT ── */
+  #slide-count {
+    position: fixed; top: 20px; right: 24px; z-index: 100;
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text-muted); letter-spacing: 1px;
+  }
+
+  /* ── LABEL CHIP ── */
+  .chip {
+    display: inline-block; font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 20px;
+    border: 1px solid var(--card-border);
+    color: var(--gold); margin-bottom: 18px;
+    background: rgba(245,197,24,0.07);
+  }
+
+  /* ── TYPOGRAPHY ── */
+  h1 {
+    font-family: 'Syne', sans-serif; font-size: clamp(38px,6vw,72px);
+    font-weight: 800; line-height: 1.05; letter-spacing: -1.5px;
+    color: var(--white);
+  }
+  h1 span { color: var(--gold); }
+  h2 {
+    font-family: 'Syne', sans-serif; font-size: clamp(26px,4vw,48px);
+    font-weight: 700; letter-spacing: -0.5px;
+  }
+  h2 span { color: var(--gold); }
+  h3 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 600; }
+  p { font-size: 17px; line-height: 1.7; color: rgba(249,247,242,0.85); }
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 16px; padding: 28px 32px; backdrop-filter: blur(12px);
+  }
+  .card.gold { border-color: var(--gold); background: rgba(245,197,24,0.07); }
+  .card.coral { border-color: var(--coral); background: rgba(255,107,107,0.06); }
+  .card.mint { border-color: var(--mint); background: rgba(78,205,196,0.06); }
+
+  /* ── FORMULA BOX ── */
+  .formula {
+    background: rgba(245,197,24,0.1); border: 2px solid var(--gold);
+    border-radius: 14px; padding: 20px 36px; text-align: center;
+    font-family: 'Syne', sans-serif; font-size: clamp(20px,3vw,32px); font-weight: 700;
+    color: var(--gold); letter-spacing: 1px;
+    box-shadow: 0 0 40px rgba(245,197,24,0.15);
+  }
+
+  /* ── STEP BOX ── */
+  .steps { display: flex; flex-direction: column; gap: 14px; }
+  .step {
+    display: flex; align-items: flex-start; gap: 16px;
+    opacity: 0; transform: translateY(12px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .step.show { opacity: 1; transform: translateY(0); }
+  .step-num {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--gold); color: var(--navy);
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-text { padding-top: 6px; font-size: 16px; line-height: 1.6; }
+
+  /* ── NUMBER LINE ── */
+  .num-line-wrap { width: 100%; padding: 10px 0 20px; position: relative; }
+  .num-line {
+    height: 4px; background: rgba(245,197,24,0.25);
+    border-radius: 2px; position: relative; margin: 40px 0;
+  }
+  .num-line .tick {
+    position: absolute; bottom: -28px;
+    font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-muted);
+    transform: translateX(-50%);
+  }
+  .num-line .dot-val {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 14px; height: 14px; border-radius: 50%; background: var(--gold);
+    box-shadow: 0 0 12px var(--gold);
+  }
+  .range-bracket {
+    position: absolute; top: -36px; height: 2px;
+    background: var(--coral); transition: width 0.8s ease, left 0.8s ease;
+  }
+  .range-bracket::before, .range-bracket::after {
+    content: ''; position: absolute; top: -8px;
+    width: 2px; height: 18px; background: var(--coral);
+  }
+  .range-bracket::after { right: 0; }
+  .range-label {
+    position: absolute; top: -62px; left: 50%; transform: translateX(-50%);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    color: var(--coral); white-space: nowrap;
+  }
+
+  /* ── DATASET CARDS ── */
+  .datasets { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
+  .dataset-card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .dataset-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; }
+  .data-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .pill {
+    background: rgba(245,197,24,0.1); border: 1px solid rgba(245,197,24,0.3);
+    border-radius: 8px; padding: 4px 12px;
+    font-family: 'DM Mono', monospace; font-size: 14px; color: var(--gold);
+  }
+  .pill.hi { background: rgba(255,107,107,0.15); border-color: var(--coral); color: var(--coral); }
+  .pill.lo { background: rgba(78,205,196,0.15); border-color: var(--mint); color: var(--mint); }
+
+  /* ── BAR CHART ── */
+  .bar-chart { display: flex; align-items: flex-end; gap: 10px; height: 120px; width: 100%; }
+  .bar {
+    flex: 1; border-radius: 6px 6px 0 0;
+    transition: height 0.8s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+  }
+  .bar-val {
+    position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
+  }
+
+  /* ── INTERACTIVE CALC ── */
+  #calc-wrap { width: 100%; max-width: 680px; }
+  .input-group {
+    display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;
+  }
+  .input-group label { font-size: 13px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+  .input-group input {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(245,197,24,0.25);
+    border-radius: 10px; padding: 12px 16px; color: var(--white);
+    font-family: 'DM Mono', monospace; font-size: 16px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .input-group input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,197,24,0.12); }
+  .btn {
+    background: var(--gold); color: var(--navy);
+    border: none; border-radius: 10px; padding: 13px 30px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.5px;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,197,24,0.3); }
+  .btn:active { transform: translateY(0); }
+  #calc-result {
+    margin-top: 16px; padding: 18px 24px;
+    border-radius: 12px; font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 600;
+    background: rgba(245,197,24,0.1); border: 1px solid rgba(245,197,24,0.3);
+    color: var(--gold); display: none;
+  }
+  #calc-steps-out { margin-top: 10px; font-size: 14px; color: rgba(249,247,242,0.7); font-family: 'DM Mono', monospace; line-height: 1.8; }
+
+  /* ── QUIZ ── */
+  .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 640px; }
+  .q-opt {
+    background: var(--card-bg); border: 1.5px solid var(--card-border);
+    border-radius: 12px; padding: 16px 20px; cursor: pointer;
+    font-size: 16px; text-align: center; font-family: 'Syne', sans-serif; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .q-opt:hover { border-color: var(--gold); background: rgba(245,197,24,0.07); }
+  .q-opt.correct { border-color: var(--mint); background: rgba(78,205,196,0.12); color: var(--mint); }
+  .q-opt.wrong { border-color: var(--coral); background: rgba(255,107,107,0.1); color: var(--coral); }
+  #quiz-feedback { margin-top: 16px; font-size: 16px; font-weight: 600; min-height: 26px; }
+  .score-badge {
+    font-family: 'Syne', sans-serif; font-size: clamp(48px,8vw,80px); font-weight: 800;
+    color: var(--gold);
+  }
+
+  /* ── CONTEXT CARDS ── */
+  .context-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; width: 100%; }
+  .ctx-card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 22px 18px; text-align: center;
+  }
+  .ctx-icon { font-size: 32px; margin-bottom: 10px; }
+  .ctx-card h4 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .ctx-card p { font-size: 13px; color: var(--text-muted); }
+
+  /* ── HIGHLIGHT TEXT ── */
+  .hl { color: var(--gold); font-weight: 600; }
+  .hl-c { color: var(--coral); font-weight: 600; }
+  .hl-m { color: var(--mint); font-weight: 600; }
+
+  /* ── GRID LAYOUTS ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; width: 100%; align-items: start; }
+  .three-col { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; width: 100%; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .center { text-align: center; }
+  .gap-sm { gap: 10px; }
+  .full { width: 100%; }
+  .max680 { max-width: 680px; width: 100%; }
+
+  /* ── DRAG SORT ── */
+  .sort-wrap { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .sortable {
+    background: rgba(245,197,24,0.12); border: 1.5px solid rgba(245,197,24,0.4);
+    border-radius: 10px; padding: 10px 18px;
+    font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500;
+    cursor: grab; user-select: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .sortable:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(245,197,24,0.2); }
+  .sortable.dragging { opacity: 0.4; cursor: grabbing; }
+  #sort-result { margin-top: 14px; font-size: 15px; color: var(--text-muted); }
+  #sort-check { margin-top: 10px; }
+
+  /* ── MISCONCEPTIONS ── */
+  .mc-list { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+  .mc-item {
+    display: flex; gap: 16px; align-items: flex-start;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 16px 20px;
+    cursor: pointer; transition: all 0.25s;
+  }
+  .mc-item:hover { border-color: rgba(245,197,24,0.4); }
+  .mc-item .icon { font-size: 22px; flex-shrink: 0; }
+  .mc-body { flex: 1; }
+  .mc-q { font-size: 15px; font-weight: 500; }
+  .mc-a { display: none; margin-top: 8px; font-size: 14px; color: rgba(249,247,242,0.7); border-top: 1px solid rgba(245,197,24,0.15); padding-top: 8px; }
+  .mc-item.open .mc-a { display: block; }
+  .mc-item.open { border-color: var(--gold); }
+
+  /* ── SLIDE 1 TITLE ── */
+  .title-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; align-items: center; }
+  .title-vis { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .data-stream {
+    display: flex; flex-direction: column; gap: 6px; width: 100%;
+  }
+  .stream-bar {
+    height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    opacity: 0; animation: streamIn 0.5s ease forwards;
+  }
+  @keyframes streamIn { to { opacity: 0.7; } }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 16px rgba(245,197,24,0.3); }
+    50% { box-shadow: 0 0 36px rgba(245,197,24,0.6); }
+  }
+  .pulse { animation: pulse 2.5s infinite; }
+  .fade-up { opacity: 0; animation: fadeUp 0.6s ease forwards; }
+  .d1 { animation-delay: 0.1s; } .d2 { animation-delay: 0.25s; }
+  .d3 { animation-delay: 0.4s; } .d4 { animation-delay: 0.55s; }
+
+  /* ── TOOLTIP ── */
+  [data-tip] { position: relative; cursor: help; border-bottom: 1px dashed rgba(245,197,24,0.5); }
+  [data-tip]::after {
+    content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%); background: var(--navy-light);
+    border: 1px solid var(--card-border); color: var(--white);
+    font-size: 12px; padding: 6px 12px; border-radius: 8px;
+    white-space: nowrap; pointer-events: none; opacity: 0;
+    transition: opacity 0.2s; z-index: 200; font-family: 'DM Sans', sans-serif;
+  }
+  [data-tip]:hover::after { opacity: 1; }
+
+  /* ── KS BADGE ── */
+  #ks-badge {
+    position: fixed; top: 18px; left: 24px; z-index: 100;
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px;
+    color: var(--gold); border: 1px solid rgba(245,197,24,0.3);
+    padding: 5px 12px; border-radius: 20px;
+    background: rgba(245,197,24,0.07); backdrop-filter: blur(8px);
+  }
+
+  /* ── SCROLLABLE INNER ── */
+  .scroll-inner { overflow-y: auto; width: 100%; max-height: calc(100vh - 100px); padding-right: 6px; }
+  .scroll-inner::-webkit-scrollbar { width: 4px; }
+  .scroll-inner::-webkit-scrollbar-thumb { background: rgba(245,197,24,0.2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="ks-badge">YEAR 9 · KEY STAGE 4</div>
+<div id="slide-count">1 / 9</div>
+
+<div id="progress-track"><div id="progress-fill" style="width:11%"></div></div>
+<button id="nav-prev">&#8592;</button>
+<button id="nav-next">&#8594;</button>
+<div id="dots"></div>
+
+<div class="deck" id="deck">
+
+  <!-- ══ SLIDE 1: TITLE ══ -->
+  <section class="slide active" data-slide="0">
+    <div class="title-grid">
+      <div class="col" style="gap:20px">
+        <div class="chip fade-up d1">Measures of Spread</div>
+        <h1 class="fade-up d2">Range &amp;<br><span>Interpretation</span></h1>
+        <p class="fade-up d3">How far does data <em>really</em> stretch? Today we discover the simplest measure of spread — and learn what it tells us about the world.</p>
+        <div class="fade-up d4" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+          <div class="card" style="padding:12px 18px;flex:1;min-width:140px">
+            <div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Topic</div>
+            <div style="font-weight:600;font-size:14px">Statistics</div>
+          </div>
+          <div class="card" style="padding:12px 18px;flex:1;min-width:140px">
+            <div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">By end of lesson</div>
+            <div style="font-weight:600;font-size:14px">Find &amp; interpret range</div>
+          </div>
+        </div>
+      </div>
+      <div class="title-vis fade-up d3">
+        <canvas id="title-chart" width="320" height="260"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SLIDE 2: STARTER ══ -->
+  <section class="slide" data-slide="1">
+    <div class="chip">Starter Activity</div>
+    <h2 class="fade-up d1">What do you <span>notice</span>?</h2>
+    <p class="fade-up d2" style="margin:8px 0 24px;max-width:600px;text-align:center">Two students both scored an average of <span class="hl">62</span> on a series of tests. But look closer…</p>
+    <div class="datasets fade-up d3">
+      <div class="dataset-card">
+        <div class="dataset-label">👩‍🎓 Amara's Scores</div>
+        <div class="data-pills">
+          <span class="pill">58</span><span class="pill">60</span><span class="pill">62</span><span class="pill">64</span><span class="pill">66</span>
+        </div>
+        <div id="amara-bars" class="bar-chart" style="margin-top:16px"></div>
+        <div style="margin-top:14px;font-size:14px;color:var(--text-muted)">Mean = <span class="hl">62</span></div>
+      </div>
+      <div class="dataset-card">
+        <div class="dataset-label">👨‍🎓 Benson's Scores</div>
+        <div class="data-pills">
+          <span class="pill">20</span><span class="pill">45</span><span class="pill">62</span><span class="pill">80</span><span class="pill">103</span>
+        </div>
+        <div id="benson-bars" class="bar-chart" style="margin-top:16px"></div>
+        <div style="margin-top:14px;font-size:14px;color:var(--text-muted)">Mean = <span class="hl">62</span></div>
+      </div>
+    </div>
+    <p class="fade-up d4" style="margin-top:20px;font-size:15px;color:var(--text-muted)">💡 <em>Same average — very different story. That's why we need <span class="hl">measures of spread</span>.</em></p>
+  </section>
+
+  <!-- ══ SLIDE 3: DEFINITION ══ -->
+  <section class="slide" data-slide="2">
+    <div class="chip">Definition</div>
+    <h2 class="fade-up d1">What is the <span>Range</span>?</h2>
+    <div class="two-col" style="margin-top:24px;align-items:center">
+      <div class="col gap-sm fade-up d2">
+        <div class="card gold">
+          <h3 style="color:var(--gold);margin-bottom:10px">The Range</h3>
+          <p>The <strong>range</strong> is the difference between the <span class="hl-c">highest</span> value and the <span class="hl-m">lowest</span> value in a dataset.</p>
+          <p style="margin-top:10px">It tells us how <strong>spread out</strong> — or how <strong>consistent</strong> — a set of data is.</p>
+        </div>
+        <div class="formula pulse" style="margin-top:10px">
+          Range = <span style="color:var(--coral)">Max</span> − <span style="color:var(--mint)">Min</span>
+        </div>
+        <p style="font-size:14px;color:var(--text-muted);margin-top:6px">A <strong>large range</strong> → data is more spread out &nbsp;|&nbsp; <strong>small range</strong> → data is more consistent</p>
+      </div>
+      <div class="fade-up d3">
+        <div class="card" style="padding:24px 28px">
+          <div class="dataset-label" style="margin-bottom:14px">Quick example</div>
+          <div class="data-pills" style="margin-bottom:16px">
+            <span class="pill lo">3</span><span class="pill">7</span><span class="pill">9</span><span class="pill">11</span><span class="pill hi">15</span>
+          </div>
+          <div class="num-line-wrap">
+            <div class="num-line" id="def-line">
+              <div class="range-bracket" id="def-bracket" style="width:0%;left:0%">
+                <div class="range-label">Range = 12</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:22px;font-size:15px;line-height:2">
+            Highest = <span class="hl-c">15</span><br>
+            Lowest = <span class="hl-m">3</span><br>
+            Range = 15 − 3 = <span class="hl">12</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SLIDE 4: HOW TO FIND ══ -->
+  <section class="slide" data-slide="3">
+    <div class="chip">Step by Step</div>
+    <h2 class="fade-up d1">How to <span>Find the Range</span></h2>
+    <div class="two-col" style="margin-top:20px">
+      <div class="fade-up d2">
+        <div class="card" style="margin-bottom:16px">
+          <div class="dataset-label">Worked Example</div>
+          <p style="font-size:15px;margin:10px 0">The ages of players on a football team:</p>
+          <div class="data-pills">
+            <span class="pill">17</span><span class="pill">19</span><span class="pill lo">16</span><span class="pill">22</span><span class="pill hi">28</span><span class="pill">21</span><span class="pill">18</span>
+          </div>
+        </div>
+        <div class="steps" id="steps-list">
+          <div class="step" id="step1">
+            <div class="step-num">1</div>
+            <div class="step-text">Write out the data in <strong>order</strong>:<br>
+              <span class="mono" style="color:var(--gold)">16, 17, 18, 19, 21, 22, 28</span>
+            </div>
+          </div>
+          <div class="step" id="step2">
+            <div class="step-num">2</div>
+            <div class="step-text">Identify the <span class="hl-c">maximum</span> value: <span class="mono hl-c">28</span></div>
+          </div>
+          <div class="step" id="step3">
+            <div class="step-num">3</div>
+            <div class="step-text">Identify the <span class="hl-m">minimum</span> value: <span class="mono hl-m">16</span></div>
+          </div>
+          <div class="step" id="step4">
+            <div class="step-num">4</div>
+            <div class="step-text">Calculate: <span class="mono">Range = <span class="hl-c">28</span> − <span class="hl-m">16</span> = <span class="hl" style="font-size:18px">12</span></span></div>
+          </div>
+        </div>
+        <button class="btn" id="steps-btn" style="margin-top:18px">▶ Reveal Steps</button>
+      </div>
+      <div class="fade-up d3">
+        <div class="card mint">
+          <h3 style="color:var(--mint);margin-bottom:12px">⚠️ Watch Out!</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <p style="font-size:14px">✗ &nbsp;Don't confuse range with <em>mean</em> or <em>median</em> — they measure different things.</p>
+            <p style="font-size:14px">✓ &nbsp;Range is always a <strong>single positive number</strong> (or zero).</p>
+            <p style="font-size:14px">✗ &nbsp;You only need <strong>two values</strong> — highest and lowest.</p>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="dataset-label">Key vocabulary</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+            <div><span class="hl" data-tip="The largest value in a set of data">Maximum</span> &nbsp;—&nbsp; <span style="font-size:14px;color:var(--text-muted)">the largest value</span></div>
+            <div><span class="hl" data-tip="The smallest value in a set of data">Minimum</span> &nbsp;—&nbsp; <span style="font-size:14px;color:var(--text-muted)">the smallest value</span></div>
+            <div><span class="hl" data-tip="How far apart the data values are">Spread</span> &nbsp;—&nbsp; <span style="font-size:14px;color:var(--text-muted)">how far apart the values are</span></div>
+            <div><span class="hl" data-tip="Data with very little variation">Consistent</span> &nbsp;—&nbsp; <span style="font-size:14px;color:var(--text-muted)">similar values, small range</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SLIDE 5: INTERACTIVE CALC ══ -->
+  <section class="slide" data-slide="4">
+    <div class="chip">Interactive Practice</div>
+    <h2 class="fade-up d1">Range <span>Calculator</span></h2>
+    <p class="fade-up d2" style="margin:6px 0 20px;text-align:center">Enter your own dataset and watch the range be calculated live.</p>
+    <div id="calc-wrap" class="fade-up d3">
+      <div class="card" style="padding:28px 32px">
+        <div class="input-group">
+          <label>Enter numbers (comma separated)</label>
+          <input type="text" id="data-input" placeholder="e.g. 12, 7, 25, 3, 18, 14" />
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn" onclick="calcRange()">Calculate Range</button>
+          <button class="btn" style="background:transparent;border:1.5px solid var(--gold);color:var(--gold)" onclick="loadExample()">Load Example</button>
+        </div>
+        <div id="calc-result">
+          <div id="calc-main"></div>
+          <div id="calc-steps-out"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;padding:18px 24px" id="calc-line-card" style="display:none">
+        <canvas id="calc-chart" height="80"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SLIDE 6: INTERPRETATION ══ -->
+  <section class="slide" data-slide="5">
+    <div class="chip">Interpretation</div>
+    <h2 class="fade-up d1">What does range <span>tell us</span>?</h2>
+    <div class="three-col" style="margin-top:20px">
+      <div class="card fade-up d1" style="text-align:center;padding:28px 20px">
+        <div style="font-size:40px;margin-bottom:12px">📏</div>
+        <h3 style="color:var(--gold);margin-bottom:8px">Consistency</h3>
+        <p style="font-size:14px">A <strong>small range</strong> means values are close together — the data is <span class="hl">consistent</span>.</p>
+        <div style="margin-top:12px;padding:10px;background:rgba(245,197,24,0.08);border-radius:8px;font-family:'DM Mono',monospace;font-size:13px">Range = 3 → very consistent</div>
+      </div>
+      <div class="card fade-up d2" style="text-align:center;padding:28px 20px">
+        <div style="font-size:40px;margin-bottom:12px">📊</div>
+        <h3 style="color:var(--coral);margin-bottom:8px">Variability</h3>
+        <p style="font-size:14px">A <strong>large range</strong> means values are far apart — the data is more <span class="hl-c">variable</span> or unpredictable.</p>
+        <div style="margin-top:12px;padding:10px;background:rgba(255,107,107,0.08);border-radius:8px;font-family:'DM Mono',monospace;font-size:13px">Range = 47 → high variability</div>
+      </div>
+      <div class="card fade-up d3" style="text-align:center;padding:28px 20px">
+        <div style="font-size:40px;margin-bottom:12px">⚖️</div>
+        <h3 style="color:var(--mint);margin-bottom:8px">Comparison</h3>
+        <p style="font-size:14px">Compare ranges across groups to judge which is more <span class="hl-m">reliable</span> or <span class="hl-m">stable</span>.</p>
+        <div style="margin-top:12px;padding:10px;background:rgba(78,205,196,0.08);border-radius:8px;font-family:'DM Mono',monospace;font-size:13px">Smaller range = more reliable</div>
+      </div>
+    </div>
+    <div class="card fade-up d4" style="margin-top:18px;max-width:680px;width:100%;padding:18px 24px">
+      <h3 style="color:var(--gold);margin-bottom:8px;font-size:16px">✍️ Exam-style interpretation sentence</h3>
+      <p style="font-size:15px;line-height:1.8">"The range for <em>[group A]</em> is <em>[value]</em>, compared to <em>[value]</em> for <em>[group B]</em>. This means <em>[group A]</em>'s results are more <span class="hl">consistent / less spread</span>."</p>
+    </div>
+  </section>
+
+  <!-- ══ SLIDE 7: REAL WORLD ══ -->
+  <section class="slide" data-slide="6">
+    <div class="chip">Real-World Context</div>
+    <h2 class="fade-up d1">Range in the <span>Real World</span></h2>
+    <div class="context-grid fade-up d2" style="margin-top:22px">
+      <div class="ctx-card">
+        <div class="ctx-icon">🌡️</div>
+        <h4>Weather</h4>
+        <p>A city with a temperature range of 5°C is far more <strong>stable</strong> than one with a range of 40°C.</p>
+      </div>
+      <div class="ctx-card">
+        <div class="ctx-icon">⚽</div>
+        <h4>Sport</h4>
+        <p>A goalkeeper who concedes 0–2 goals (range 2) is more <strong>consistent</strong> than one who concedes 0–8 (range 8).</p>
+      </div>
+      <div class="ctx-card">
+        <div class="ctx-icon">💊</div>
+        <h4>Medicine</h4>
+        <p>A drug dosage with a range of 2mg is <strong>safer</strong> to administer than one with a range of 30mg.</p>
+      </div>
+      <div class="ctx-card">
+        <div class="ctx-icon">📈</div>
+        <h4>Finance</h4>
+        <p>A stock price that varies by £2 is far more <strong>stable</strong> than one varying by £80.</p>
+      </div>
+      <div class="ctx-card">
+        <div class="ctx-icon">🎓</div>
+        <h4>Exam Results</h4>
+        <p>Class A: Range = 12. Class B: Range = 48. Class A performed more <strong>consistently</strong>.</p>
+      </div>
+      <div class="ctx-card">
+        <div class="ctx-icon">🏭</div>
+        <h4>Manufacturing</h4>
+        <p>A factory needs a small range in product dimensions to ensure <strong>quality control</strong>.</p>
+      </div>
+    </div>
+    <p class="fade-up d4" style="margin-top:18px;font-size:14px;color:var(--text-muted);text-align:center">Range is the simplest measure of spread — always use it alongside the mean for a fuller picture.</p>
+  </section>
+
+  <!-- ══ SLIDE 8: MISCONCEPTIONS ══ -->
+  <section class="slide" data-slide="7">
+    <div class="chip">Common Mistakes</div>
+    <h2 class="fade-up d1">Tackle the <span>Misconceptions</span></h2>
+    <p class="fade-up d2" style="margin:8px 0 20px;text-align:center">Click each card to reveal the correction.</p>
+    <div class="mc-list max680 fade-up d3">
+      <div class="mc-item" onclick="toggleMc(this)">
+        <div class="icon">❌</div>
+        <div class="mc-body">
+          <div class="mc-q">"The range of 4, 8, 3, 10, 6 is 10."</div>
+          <div class="mc-a">✅ Incorrect! Range = Max − Min = 10 − 3 = <strong>7</strong>. Range is the <em>difference</em>, not the maximum value.</div>
+        </div>
+      </div>
+      <div class="mc-item" onclick="toggleMc(this)">
+        <div class="icon">❌</div>
+        <div class="mc-body">
+          <div class="mc-q">"A larger range always means better data."</div>
+          <div class="mc-a">✅ Incorrect! A larger range means more spread / variability. Whether that's "better" depends on context. Often, consistency (small range) is preferable.</div>
+        </div>
+      </div>
+      <div class="mc-item" onclick="toggleMc(this)">
+        <div class="icon">❌</div>
+        <div class="mc-body">
+          <div class="mc-q">"You need to find the range of all values, not just two."</div>
+          <div class="mc-a">✅ Incorrect! Range only requires the <strong>maximum</strong> and <strong>minimum</strong> values. All other values in the dataset are ignored.</div>
+        </div>
+      </div>
+      <div class="mc-item" onclick="toggleMc(this)">
+        <div class="icon">❌</div>
+        <div class="mc-body">
+          <div class="mc-q">"Range and mean tell you the same thing."</div>
+          <div class="mc-a">✅ Incorrect! Mean measures the <em>average</em> (central tendency). Range measures <em>spread</em>. Two datasets can share the same mean but have very different ranges.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SLIDE 9: QUIZ ══ -->
+  <section class="slide" data-slide="8">
+    <div class="chip">Exit Quiz</div>
+    <div id="quiz-container">
+      <div id="q-area"></div>
+    </div>
+    <div id="results-area" style="display:none;text-align:center">
+      <div class="score-badge" id="score-display"></div>
+      <p style="font-size:20px;margin:10px 0">Well done completing the quiz!</p>
+      <div id="score-msg" style="font-size:16px;color:var(--text-muted);max-width:480px;margin:0 auto"></div>
+      <button class="btn" style="margin-top:24px" onclick="restartQuiz()">🔄 Try Again</button>
+    </div>
+  </section>
+
+</div><!-- /deck -->
+
+<script>
+// ════════════════════════════════════════
+//  BACKGROUND PARTICLE GRID
+// ════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [];
+  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; init(); }
+  function init(){
+    nodes = [];
+    const cols = Math.ceil(W/90), rows = Math.ceil(H/90);
+    for(let i=0;i<cols*rows;i++){
+      nodes.push({
+        x: (i%cols)*90 + Math.random()*60-30,
+        y: Math.floor(i/cols)*90 + Math.random()*60-30,
+        r: Math.random()*1.4+0.4,
+        a: Math.random()*Math.PI*2,
+        s: Math.random()*0.3+0.1,
+        alpha: Math.random()*0.5+0.1
+      });
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    nodes.forEach(n=>{
+      n.a += n.s * 0.012;
+      n.x += Math.sin(n.a)*0.18;
+      n.y += Math.cos(n.a)*0.12;
+      if(n.x<0) n.x=W; if(n.x>W) n.x=0;
+      if(n.y<0) n.y=H; if(n.y>H) n.y=0;
+      ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(245,197,24,${n.alpha})`; ctx.fill();
+    });
+    // grid lines
+    ctx.strokeStyle = 'rgba(245,197,24,0.04)'; ctx.lineWidth=0.5;
+    for(let x=0;x<W;x+=90){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for(let y=0;y<H;y+=90){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',resize); resize(); draw();
+})();
+
+// ════════════════════════════════════════
+//  SLIDE NAVIGATION
+// ════════════════════════════════════════
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+const dotsEl = document.getElementById('dots');
+const progressFill = document.getElementById('progress-fill');
+const countEl = document.getElementById('slide-count');
+
+for(let i=0;i<total;i++){
+  const d = document.createElement('div');
+  d.className = 'dot' + (i===0?' on':'');
+  d.onclick = ()=>goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function goTo(n){
+  if(n===current||n<0||n>=total) return;
+  slides[current].classList.remove('active'); slides[current].classList.add('exit');
+  setTimeout(()=>{ slides[current].classList.remove('exit'); current=n; activateSlide(); }, 400);
+}
+
+function activateSlide(){
+  slides[current].classList.add('active');
+  document.querySelectorAll('.dot').forEach((d,i)=> d.classList.toggle('on',i===current));
+  progressFill.style.width = ((current+1)/total*100)+'%';
+  countEl.textContent = `${current+1} / ${total}`;
+  onSlideEnter(current);
+}
+
+document.getElementById('nav-prev').onclick = ()=>goTo(current-1);
+document.getElementById('nav-next').onclick = ()=>goTo(current+1);
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ') goTo(current+1);
+  if(e.key==='ArrowLeft') goTo(current-1);
+});
+// Touch swipe
+let tx=0;
+document.addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; });
+document.addEventListener('touchend',e=>{
+  const dx=tx-e.changedTouches[0].clientX;
+  if(Math.abs(dx)>50){ dx>0?goTo(current+1):goTo(current-1); }
+});
+
+// ════════════════════════════════════════
+//  TITLE CHART (canvas)
+// ════════════════════════════════════════
+function drawTitleChart(){
+  const c = document.getElementById('title-chart');
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  const data = [42,67,55,78,50,88,34,72,60,81];
+  const W=c.width, H=c.height, pad=30, bw=20, gap=8;
+  ctx.clearRect(0,0,W,H);
+  const max=Math.max(...data);
+  data.forEach((v,i)=>{
+    const bh=(v/max)*(H-pad*2);
+    const x=pad+i*(bw+gap);
+    const y=H-pad-bh;
+    const grad=ctx.createLinearGradient(0,y,0,H-pad);
+    grad.addColorStop(0,'rgba(245,197,24,0.9)');
+    grad.addColorStop(1,'rgba(245,197,24,0.2)');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.roundRect(x,y,bw,bh,4);
+    ctx.fill();
+  });
+  // Range bracket
+  const minIdx=data.indexOf(Math.min(...data)), maxIdx=data.indexOf(Math.max(...data));
+  const x1=pad+minIdx*(bw+gap)+bw/2, x2=pad+maxIdx*(bw+gap)+bw/2;
+  ctx.strokeStyle='rgba(255,107,107,0.8)'; ctx.lineWidth=2;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(x1,12); ctx.lineTo(x2,12); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,107,107,0.9)'; ctx.font='bold 12px DM Mono,monospace';
+  ctx.textAlign='center'; ctx.fillText('Range',((x1+x2)/2),8);
+}
+
+// ════════════════════════════════════════
+//  STARTER BARS (slide 2)
+// ════════════════════════════════════════
+function drawStarterBars(){
+  const amaraData=[58,60,62,64,66], bensonData=[20,45,62,80,103];
+  const colors=['rgba(245,197,24,0.7)','rgba(245,197,24,0.55)','rgba(245,197,24,0.4)','rgba(245,197,24,0.55)','rgba(245,197,24,0.7)'];
+  const colors2=['rgba(255,107,107,0.3)','rgba(255,107,107,0.5)','rgba(255,107,107,0.65)','rgba(255,107,107,0.8)','rgba(255,107,107,1)'];
+  function renderBars(id, dataset, cols, h){
+    const wrap=document.getElementById(id); if(!wrap) return;
+    wrap.innerHTML='';
+    const max=Math.max(...dataset);
+    dataset.forEach((v,i)=>{
+      const bar=document.createElement('div'); bar.className='bar';
+      bar.style.background=cols[i]; bar.style.height='0px';
+      const val=document.createElement('div'); val.className='bar-val'; val.textContent=v;
+      bar.appendChild(val); wrap.appendChild(bar);
+      setTimeout(()=>{ bar.style.height=((v/max)*h)+'px'; },100+i*80);
+    });
+  }
+  renderBars('amara-bars',amaraData,colors,110);
+  renderBars('benson-bars',bensonData,colors2,110);
+}
+
+// ════════════════════════════════════════
+//  DEFINITION SLIDE ANIMATION
+// ════════════════════════════════════════
+function animateDefLine(){
+  setTimeout(()=>{
+    const b=document.getElementById('def-bracket');
+    if(b){ b.style.width='80%'; b.style.left='8%'; }
+  },600);
+}
+
+// ════════════════════════════════════════
+//  STEPS REVEAL
+// ════════════════════════════════════════
+let stepsRevealed=0;
+document.getElementById('steps-btn').onclick=function(){
+  stepsRevealed++;
+  const step=document.getElementById('step'+stepsRevealed);
+  if(step){ step.classList.add('show'); }
+  if(stepsRevealed>=4){ this.textContent='✓ All steps shown'; this.disabled=true; this.style.opacity='0.5'; }
+};
+
+// ════════════════════════════════════════
+//  RANGE CALCULATOR
+// ════════════════════════════════════════
+function calcRange(){
+  const raw=document.getElementById('data-input').value;
+  const nums=raw.split(',').map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+  if(nums.length<2){ alert('Please enter at least 2 numbers.'); return; }
+  const mn=Math.min(...nums), mx=Math.max(...nums), rng=mx-mn;
+  const res=document.getElementById('calc-result');
+  document.getElementById('calc-main').innerHTML=
+    `Range = <span style="color:var(--coral)">${mx}</span> − <span style="color:var(--mint)">${mn}</span> = <strong style="color:var(--gold);font-size:22px">${rng}</strong>`;
+  document.getElementById('calc-steps-out').innerHTML=
+    `Dataset: ${[...nums].sort((a,b)=>a-b).join(', ')}<br>Max = ${mx} &nbsp;·&nbsp; Min = ${mn} &nbsp;·&nbsp; Range = ${rng}`;
+  res.style.display='block';
+  drawCalcChart(nums);
+}
+
+function loadExample(){
+  const examples=[
+    '14, 23, 8, 31, 17, 9, 26',
+    '55, 72, 61, 48, 66, 79, 50',
+    '3.2, 7.8, 5.1, 9.4, 2.6, 6.0',
+    '100, 145, 88, 132, 117, 99'
+  ];
+  document.getElementById('data-input').value=examples[Math.floor(Math.random()*examples.length)];
+  calcRange();
+}
+
+function drawCalcChart(nums){
+  const card=document.getElementById('calc-line-card');
+  card.style.display='block';
+  const canvas=document.getElementById('calc-chart');
+  const W=card.clientWidth-48; canvas.width=W; canvas.height=80;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,80);
+  const mn=Math.min(...nums), mx=Math.max(...nums), range=mx-mn||1;
+  const spread=nums.map(v=>(v-mn)/range*0.85+0.05);
+  const y=40;
+  ctx.strokeStyle='rgba(245,197,24,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  spread.forEach((s,i)=>{
+    const x=s*W;
+    const isMin=(nums[i]===mn), isMax=(nums[i]===mx);
+    ctx.beginPath(); ctx.arc(x,y,isMin||isMax?8:5,0,Math.PI*2);
+    ctx.fillStyle=isMax?'var(--coral)':isMin?'var(--mint)':'rgba(245,197,24,0.7)';
+    ctx.fill();
+    ctx.fillStyle=isMax||isMin?'var(--white)':'transparent';
+    ctx.font='bold 10px DM Mono,monospace'; ctx.textAlign='center';
+    if(isMax||isMin) ctx.fillText(nums[i],x,y+3);
+  });
+  const minX=spread[nums.indexOf(mn)]*W, maxX=spread[nums.indexOf(mx)]*W;
+  ctx.strokeStyle='rgba(255,107,107,0.5)'; ctx.lineWidth=2;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(minX,12); ctx.lineTo(maxX,12); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// ════════════════════════════════════════
+//  MISCONCEPTIONS TOGGLE
+// ════════════════════════════════════════
+function toggleMc(el){ el.classList.toggle('open'); }
+
+// ════════════════════════════════════════
+//  QUIZ
+// ════════════════════════════════════════
+const questions=[
+  { q:"What is the range of: 5, 12, 3, 9, 17, 7?", opts:["14","9","17","12"], ans:0 },
+  { q:"A class scored: 55, 70, 48, 82, 61. What is the range?", opts:["27","34","82","22"], ans:1 },
+  { q:"Two archers' scores have ranges of 8 and 23. Who is more consistent?", opts:["Range 23","Range 8","They are equal","Cannot tell"], ans:1 },
+  { q:"Which pair correctly identifies Max and Min for: 4, 11, 2, 8, 15?", opts:["Max=11, Min=4","Max=15, Min=2","Max=15, Min=4","Max=8, Min=2"], ans:1 },
+  { q:"The range of 9, 9, 9, 9 is:", opts:["9","4","36","0"], ans:3 },
+];
+let qIdx=0, score=0;
+
+function renderQuestion(){
+  const area=document.getElementById('q-area');
+  const q=questions[qIdx];
+  area.innerHTML=`
+    <h3 style="font-family:'Syne',sans-serif;font-size:clamp(14px,2.5vw,20px);text-align:center;margin-bottom:6px;color:var(--text-muted)">Question ${qIdx+1} of ${questions.length}</h3>
+    <h2 style="font-family:'Syne',sans-serif;font-size:clamp(16px,2.8vw,24px);text-align:center;margin-bottom:20px;line-height:1.4">${q.q}</h2>
+    <div class="quiz-options" style="max-width:560px;margin:0 auto">
+      ${q.opts.map((o,i)=>`<div class="q-opt" onclick="answerQ(this,${i},${q.ans})">${o}</div>`).join('')}
+    </div>
+    <div id="quiz-feedback" style="text-align:center;margin-top:14px;min-height:22px"></div>
+  `;
+}
+
+function answerQ(el, chosen, correct){
+  document.querySelectorAll('.q-opt').forEach(o=>o.onclick=null);
+  if(chosen===correct){ el.classList.add('correct'); score++;
+    document.getElementById('quiz-feedback').innerHTML='<span style="color:var(--mint)">✓ Correct! Well done.</span>';
+  } else {
+    el.classList.add('wrong');
+    document.querySelectorAll('.q-opt')[correct].classList.add('correct');
+    document.getElementById('quiz-feedback').innerHTML='<span style="color:var(--coral)">✗ Not quite — the correct answer is highlighted.</span>';
+  }
+  setTimeout(()=>{
+    qIdx++;
+    if(qIdx<questions.length){ renderQuestion(); }
+    else { showResults(); }
+  },1400);
+}
+
+function showResults(){
+  document.getElementById('q-area').style.display='none';
+  const ra=document.getElementById('results-area'); ra.style.display='block';
+  document.getElementById('score-display').textContent=`${score} / ${questions.length}`;
+  const msgs=['Keep practising — review the slides and try again!','Good effort! Almost there.','Solid work — you\'re getting it!','Great job! Strong understanding of range.','Perfect score! Outstanding work! 🌟'];
+  document.getElementById('score-msg').textContent=msgs[Math.min(score,4)];
+}
+
+function restartQuiz(){
+  qIdx=0; score=0;
+  document.getElementById('q-area').style.display='block';
+  document.getElementById('results-area').style.display='none';
+  renderQuestion();
+}
+
+// ════════════════════════════════════════
+//  SLIDE ENTER HOOKS
+// ════════════════════════════════════════
+function onSlideEnter(n){
+  if(n===0) { setTimeout(drawTitleChart,300); }
+  if(n===1) { drawStarterBars(); }
+  if(n===2) { animateDefLine(); }
+  if(n===3) { stepsRevealed=0; document.getElementById('steps-btn').disabled=false; document.getElementById('steps-btn').style.opacity='1'; document.getElementById('steps-btn').textContent='▶ Reveal Steps'; document.querySelectorAll('.step').forEach(s=>s.classList.remove('show')); }
+  if(n===8) { qIdx=0; score=0; document.getElementById('q-area').style.display='block'; document.getElementById('results-area').style.display='none'; renderQuestion(); }
+}
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+onSlideEnter(0);
+</script>
+</body>
+</html>
